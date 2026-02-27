@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell:*)",
+      "Bash(cmd:*)",
+      "Bash(uv run:*)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(where:*)"
+    ]
+  }
+}

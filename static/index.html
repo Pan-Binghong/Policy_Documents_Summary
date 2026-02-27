@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>政策文档智能摘要系统</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── DESIGN TOKENS ── */
+    :root {
+      --navy:         #0d1f42;
+      --navy-hover:   #162d5c;
+      --blue:         #1a52a8;
+      --blue-light:   #e8eef8;
+      --blue-border:  rgba(26, 82, 168, 0.22);
+      --gold:         #c8820a;
+      --gold-light:   #fff3dc;
+      --bg:           #edf0f6;
+      --surface:      #ffffff;
+      --surface2:     #f7f8fb;
+      --text:         #1a2033;
+      --text2:        #4a566e;
+      --text3:        #9aa4b8;
+      --border:       rgba(0, 0, 0, 0.08);
+      --border2:      rgba(0, 0, 0, 0.05);
+      --green:        #0d8c62;
+      --green-light:  #e6f6f0;
+      --orange:       #c97a0a;
+      --orange-light: #fff4e5;
+      --red:          #be2d2d;
+      --red-light:    #fdecea;
+      --shadow-sm:    0 1px 3px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+      --shadow-md:    0 2px 8px rgba(0,0,0,0.07), 0 6px 20px rgba(0,0,0,0.05);
+      --f-serif: 'Noto Serif SC', 'STSong', '宋体', Georgia, serif;
+      --f-sans:  'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      --f-mono:  'JetBrains Mono', 'Courier New', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--f-sans);
+      font-size: 14px;
+      line-height: 1.65;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ── SITE HEADER ── */
+    .site-header {
+      background: var(--navy);
+      border-bottom: 3px solid var(--gold);
+      position: sticky; top: 0; z-index: 50;
+    }
+
+    .hdr-inner {
+      max-width: 1360px; margin: 0 auto; padding: 0 28px;
+      height: 68px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .logo { display: flex; align-items: center; gap: 14px; }
+
+    .emblem {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.75);
+      display: flex; align-items: center; justify-content: center;
+      position: relative; flex-shrink: 0;
+    }
+    .emblem::after {
+      content: ''; position: absolute; inset: 4px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .emblem-char {
+      font-family: var(--f-serif); font-size: 18px; font-weight: 700;
+      color: #ffffff; position: relative; z-index: 1;
+    }
+
+    .logo-text { display: flex; flex-direction: column; gap: 1px; }
+    .hdr-title {
+      font-family: var(--f-serif); font-size: 19px; font-weight: 700;
+      color: #ffffff; letter-spacing: 0.06em;
+    }
+    .hdr-sub {
+      font-size: 10px; color: rgba(255,255,255,0.4);
+      letter-spacing: 0.2em; text-transform: uppercase;
+    }
+
+    .hdr-right { display: flex; align-items: center; gap: 18px; }
+
+    .version {
+      font-family: var(--f-mono); font-size: 11px;
+      color: rgba(255,255,255,0.35); letter-spacing: 0.08em;
+      border: 1px solid rgba(255,255,255,0.15); padding: 2px 9px;
+    }
+
+    .sys-status { display: flex; align-items: center; gap: 7px; }
+    .sys-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: #34d399; box-shadow: 0 0 0 3px rgba(52,211,153,0.2);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .sys-label { font-size: 12px; color: rgba(255,255,255,0.55); }
+
+    /* ── MAIN CONTENT AREA ── */
+    .site-main {
+      min-height: calc(100vh - 71px);
+      background: var(--bg);
+      background-image: radial-gradient(circle, rgba(13,31,66,0.055) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .main-inner {
+      max-width: 1360px; margin: 0 auto; padding: 32px 28px 64px;
+    }
+
+    /* ── SECTION HEADING ── */
+    .sec-hdr {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+    }
+    .sec-num {
+      font-family: var(--f-mono); font-size: 10px; font-weight: 500;
+      color: var(--blue); letter-spacing: 0.14em;
+      background: var(--blue-light); padding: 2px 7px;
+      border: 1px solid var(--blue-border);
+    }
+    .sec-label {
+      font-family: var(--f-serif); font-size: 15px; font-weight: 700;
+      color: var(--navy); letter-spacing: 0.05em;
+    }
+    .sec-rule { flex: 1; height: 1px; background: var(--border); }
+
+    /* ── MAIN GRID ── */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 390px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    /* ── CARD SHELL ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      padding: 22px;
+    }
+
+    /* ── DROP ZONE ── */
+    .drop-zone {
+      border: 2px dashed var(--blue-border);
+      background: var(--blue-light);
+      padding: 42px 20px;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: border-color .22s, background .22s, transform .18s;
+      margin-bottom: 16px;
+    }
+    .drop-zone:hover, .drop-zone.over {
+      border-color: var(--blue);
+      background: #dde8f8;
+      transform: translateY(-1px);
+    }
+
+    /* corner accents */
+    .ca {
+      position: absolute; width: 16px; height: 16px;
+      border-color: var(--blue-border); border-style: solid;
+      transition: border-color .22s;
+    }
+    .drop-zone:hover .ca, .drop-zone.over .ca { border-color: var(--blue); }
+    .ca.tl { top: 10px; left: 10px;  border-width: 2px 0 0 2px; }
+    .ca.tr { top: 10px; right: 10px; border-width: 2px 2px 0 0; }
+    .ca.bl { bottom: 10px; left: 10px;  border-width: 0 0 2px 2px; }
+    .ca.br { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+    .dz-icon {
+      width: 52px; height: 52px; margin: 0 auto 16px;
+      transition: transform .3s;
+    }
+    .drop-zone:hover .dz-icon, .drop-zone.over .dz-icon {
+      transform: translateY(-4px);
+    }
+
+    .dz-primary {
+      font-family: var(--f-serif); font-size: 15px; font-weight: 600;
+      color: var(--navy); margin-bottom: 6px;
+    }
+    .dz-secondary { font-size: 12px; color: var(--text2); }
+
+    /* ── DOC TYPE BADGES ── */
+    .doc-types { display: flex; gap: 8px; margin-bottom: 16px; }
+    .dt-item {
+      flex: 1; padding: 9px 6px; border: 1px solid var(--border);
+      background: var(--surface2); text-align: center;
+      display: flex; flex-direction: column; align-items: center; gap: 5px;
+      transition: border-color .18s, box-shadow .18s;
+    }
+    .dt-item:hover { border-color: var(--blue-border); box-shadow: var(--shadow-sm); }
+
+    .dt-badge {
+      font-family: var(--f-mono); font-size: 9px;
+      letter-spacing: 0.1em; padding: 2px 8px; font-weight: 500;
+    }
+    .dt-badge.zip  { color: #7c3aed;      background: #f3eeff;             border: 1px solid rgba(124,58,237,0.2); }
+    .dt-badge.pdf  { color: var(--red);   background: var(--red-light);    border: 1px solid rgba(190,45,45,0.2); }
+    .dt-badge.docx { color: var(--blue);  background: var(--blue-light);   border: 1px solid var(--blue-border); }
+    .dt-badge.img  { color: var(--green); background: var(--green-light);  border: 1px solid rgba(13,140,98,0.2); }
+    .dt-label { font-size: 11px; color: var(--text2); }
+
+    /* ── FILE LIST ── */
+    .file-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+
+    .file-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 12px;
+      border: 1px solid var(--border); background: var(--surface2);
+      animation: slideDown .2s ease;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-5px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .fi-icon {
+      width: 30px; height: 30px; flex-shrink: 0;
+      background: var(--gold-light);
+      border: 1px solid rgba(200,130,10,0.2);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .fi-info { flex: 1; min-width: 0; }
+    .fi-name {
+      font-size: 13px; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .fi-size { font-family: var(--f-mono); font-size: 10px; color: var(--text3); }
+
+    .fi-rm {
+      cursor: pointer; color: var(--text3); transition: color .15s;
+      display: flex; align-items: center; padding: 4px; flex-shrink: 0;
+    }
+    .fi-rm:hover { color: var(--red); }
+
+    /* ── SUBMIT BUTTON ── */
+    .submit-btn {
+      width: 100%;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      padding: 13px 20px;
+      background: var(--navy); border: 2px solid var(--navy);
+      color: #ffffff;
+      font-family: var(--f-serif); font-size: 15px; font-weight: 600; letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, transform .15s;
+    }
+    .submit-btn:not(:disabled):hover {
+      background: var(--navy-hover);
+      border-color: var(--navy-hover);
+      transform: translateY(-1px);
+    }
+    .submit-btn:not(:disabled):active { transform: translateY(0); }
+    .submit-btn:disabled { opacity: 0.32; cursor: not-allowed; }
+
+    /* ── TASKS PANEL ── */
+    .tasks-panel { display: flex; flex-direction: column; }
+
+    .tasks-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .tasks-count {
+      font-family: var(--f-mono); font-size: 11px; color: var(--text3);
+    }
+    .clear-btn {
+      background: none; border: none; font-size: 12px; font-family: var(--f-sans);
+      color: var(--text3); cursor: pointer; transition: color .15s; padding: 2px 4px;
+    }
+    .clear-btn:hover { color: var(--red); }
+
+    .task-list { display: flex; flex-direction: column; gap: 10px; }
+
+    /* ── EMPTY STATE ── */
+    .empty-state {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 72px 24px; text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .empty-icon {
+      width: 56px; height: 56px; margin: 0 auto 18px;
+      background: var(--blue-light);
+      border: 1px solid var(--blue-border);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .empty-primary {
+      font-family: var(--f-serif); font-size: 16px; font-weight: 600;
+      color: var(--text); margin-bottom: 8px;
+    }
+    .empty-secondary { font-size: 13px; color: var(--text3); }
+
+    /* ── TASK CARD ── */
+    .task-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--text3);
+      box-shadow: var(--shadow-sm);
+      padding: 16px 18px;
+      animation: slideDown .28s ease;
+      transition: box-shadow .2s, transform .18s;
+    }
+    .task-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .task-card[data-status="pending"]    { border-left-color: var(--text3); }
+    .task-card[data-status="processing"] { border-left-color: var(--orange); }
+    .task-card[data-status="done"]       { border-left-color: var(--green); }
+    .task-card[data-status="error"]      { border-left-color: var(--red); }
+
+    .tc-head {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .tc-id-label {
+      font-size: 10px; color: var(--text3); letter-spacing: .1em;
+      text-transform: uppercase; margin-bottom: 2px;
+    }
+    .tc-id-value { font-family: var(--f-mono); font-size: 12px; color: var(--text2); }
+
+    /* Status badge */
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-family: var(--f-mono); font-size: 10px; letter-spacing: .06em;
+      padding: 3px 10px; border-radius: 2px; flex-shrink: 0;
+    }
+    .sb-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+
+    .status-badge.pending {
+      color: var(--text2); background: var(--surface2); border: 1px solid var(--border);
+    }
+    .status-badge.pending .sb-dot { background: var(--text3); }
+
+    .status-badge.processing {
+      color: var(--orange); background: var(--orange-light); border: 1px solid rgba(201,122,10,0.2);
+    }
+    .status-badge.processing .sb-dot {
+      background: var(--orange);
+      animation: pulse 1s ease-in-out infinite;
+    }
+
+    .status-badge.done {
+      color: var(--green); background: var(--green-light); border: 1px solid rgba(13,140,98,0.2);
+    }
+    .status-badge.done .sb-dot { background: var(--green); }
+
+    .status-badge.error {
+      color: var(--red); background: var(--red-light); border: 1px solid rgba(190,45,45,0.2);
+    }
+    .status-badge.error .sb-dot { background: var(--red); }
+
+    /* Task files */
+    .tc-files { margin-bottom: 10px; }
+    .tc-files-label {
+      font-size: 10px; color: var(--text3); letter-spacing: .08em;
+      text-transform: uppercase; margin-bottom: 5px;
+    }
+    .tc-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+    .tc-tag {
+      font-family: var(--f-mono); font-size: 10px; color: var(--text2);
+      background: var(--surface2); border: 1px solid var(--border);
+      padding: 2px 8px;
+    }
+
+    /* Progress bar */
+    .progress-bar {
+      height: 3px; background: var(--border); margin: 10px 0; overflow: hidden; border-radius: 2px;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue), var(--orange));
+      animation: progress 1.6s ease-in-out infinite;
+    }
+    @keyframes progress {
+      0%   { transform: translateX(-100%) scaleX(.5); }
+      50%  { transform: translateX(0) scaleX(.8); }
+      100% { transform: translateX(100%) scaleX(.5); }
+    }
+
+    /* Error block */
+    .tc-error {
+      font-size: 11px; color: var(--red);
+      padding: 8px 12px; margin: 8px 0;
+      background: var(--red-light);
+      border-left: 3px solid var(--red);
+      word-break: break-all; line-height: 1.5;
+    }
+
+    /* Card footer */
+    .tc-foot {
+      display: flex; align-items: center; justify-content: space-between; margin-top: 10px;
+    }
+    .tc-time { font-family: var(--f-mono); font-size: 11px; color: var(--text3); }
+
+    /* Download button */
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px;
+      background: var(--green); border: none;
+      color: #ffffff; font-size: 12px; font-family: var(--f-sans); font-weight: 500;
+      text-decoration: none;
+      transition: background .2s, transform .15s;
+    }
+    .dl-btn:hover { background: #0a7a56; transform: translateY(-1px); }
+
+    /* ── TOAST NOTIFICATIONS ── */
+    .toast-wrap {
+      position: fixed; bottom: 24px; right: 24px;
+      display: flex; flex-direction: column; gap: 8px; z-index: 999;
+    }
+    .toast {
+      padding: 12px 16px;
+      background: var(--navy); color: #fff;
+      border-left: 4px solid var(--gold);
+      font-size: 13px;
+      min-width: 260px; max-width: 380px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.18);
+      animation: toastIn .3s ease;
+    }
+    .toast.s { border-left-color: #34d399; }
+    .toast.e { background: var(--red); border-left-color: rgba(255,255,255,0.4); }
+
+    @keyframes toastIn  { from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:none} }
+    @keyframes toastOut { from{opacity:1;transform:none} to{opacity:0;transform:translateX(16px)} }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--text3); border-radius: 3px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 860px) {
+      .main-grid { grid-template-columns: 1fr; }
+      .hdr-inner { padding: 0 16px; }
+      .main-inner { padding: 20px 16px 48px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header class="site-header">
+    <div class="hdr-inner">
+      <div class="logo">
+        <div class="emblem">
+          <span class="emblem-char">政</span>
+        </div>
+        <div class="logo-text">
+          <h1 class="hdr-title">政策文档智能摘要系统</h1>
+          <p class="hdr-sub">Policy Intelligence Summary &middot; Powered by DeepSeek</p>
+        </div>
+      </div>
+      <div class="hdr-right">
+        <span class="version">v0.1.0</span>
+        <div class="sys-status">
+          <div class="sys-dot"></div>
+          <span class="sys-label">系统运行中</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main class="site-main">
+    <div class="main-inner">
+      <div class="main-grid">
+
+        <!-- ─── LEFT: UPLOAD ─── -->
+        <section>
+          <div class="sec-hdr">
+            <span class="sec-num">01</span>
+            <span class="sec-label">上传政策文档</span>
+            <span class="sec-rule"></span>
+          </div>
+
+          <div class="card">
+            <div class="drop-zone" id="drop-zone">
+              <div class="ca tl"></div><div class="ca tr"></div>
+              <div class="ca bl"></div><div class="ca br"></div>
+              <div class="dz-icon">
+                <svg viewBox="0 0 52 52" fill="none" stroke="var(--blue)" stroke-width="1.5"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="8" y="12" width="30" height="34" rx="2" stroke-width="1.5"/>
+                  <path d="M38 12h4a2 2 0 0 1 2 2v30a2 2 0 0 1-2 2H38"/>
+                  <path d="M16 22h16M16 29h16M16 36h10"/>
+                  <path d="M26 2v14l-5-5m5 5 5-5" stroke="var(--gold)" stroke-width="1.6"/>
+                </svg>
+              </div>
+              <p class="dz-primary">拖拽文件至此处，或点击选择</p>
+              <p class="dz-secondary">支持 ZIP / PDF / Word / 图片 &middot; 可混合批量上传</p>
+              <input type="file" id="file-input" accept=".zip,.pdf,.docx,.doc,.jpg,.jpeg,.png,.bmp,.tiff" multiple style="display:none" />
+            </div>
+
+            <!-- Supported file types -->
+            <div class="doc-types">
+              <div class="dt-item">
+                <span class="dt-badge zip">ZIP</span>
+                <span class="dt-label">压缩包</span>
+              </div>
+              <div class="dt-item">
+                <span class="dt-badge pdf">PDF</span>
+                <span class="dt-label">PDF 文档</span>
+              </div>
+              <div class="dt-item">
+                <span class="dt-badge docx">DOCX</span>
+                <span class="dt-label">Word 文档</span>
+              </div>
+              <div class="dt-item">
+                <span class="dt-badge img">IMG</span>
+                <span class="dt-label">图片 OCR</span>
+              </div>
+            </div>
+
+            <!-- Selected files -->
+            <div class="file-list" id="file-list"></div>
+
+            <!-- Submit -->
+            <button class="submit-btn" id="submit-btn" disabled>
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+                <polygon points="10 1 3 10.5 8.5 10.5 7 19 17 9.5 11.5 9.5 10 1"/>
+              </svg>
+              <span id="btn-text">开始智能解析</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- ─── RIGHT: TASK QUEUE ─── -->
+        <section class="tasks-panel">
+          <div class="sec-hdr">
+            <span class="sec-num">02</span>
+            <span class="sec-label">任务队列</span>
+            <span class="sec-rule"></span>
+          </div>
+
+          <div class="tasks-meta">
+            <span class="tasks-count" id="tasks-count">共 0 条记录</span>
+            <button class="clear-btn" onclick="clearTasks()">清空历史</button>
+          </div>
+
+          <div class="task-list" id="task-list"></div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <div class="toast-wrap" id="toasts"></div>
+
+  <script>
+    /* ══════════════════════════════════════
+       STATE
+    ══════════════════════════════════════ */
+    const STORE_KEY = 'pds_tasks_v2';
+
+    const state = {
+      files:  [],
+      tasks:  loadFromStorage(),
+      timers: new Map(),
+    };
+
+    const STATUS_LABEL = {
+      pending:    '排队中',
+      processing: '处理中',
+      done:       '已完成',
+      error:      '处理失败',
+    };
+
+    /* ══════════════════════════════════════
+       INIT
+    ══════════════════════════════════════ */
+    function init() {
+      bindDropZone();
+
+      document.getElementById('file-input').addEventListener('change', e => {
+        addFiles([...e.target.files]);
+        e.target.value = '';
+      });
+
+      document.getElementById('submit-btn').addEventListener('click', handleUpload);
+
+      renderTasks();
+
+      // Resume polling for in-flight tasks
+      state.tasks.forEach(t => {
+        if (t.status === 'pending' || t.status === 'processing') startPolling(t.id);
+      });
+    }
+
+    /* ══════════════════════════════════════
+       DROP ZONE
+    ══════════════════════════════════════ */
+    function bindDropZone() {
+      const zone = document.getElementById('drop-zone');
+      zone.addEventListener('click', () => document.getElementById('file-input').click());
+      zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+      zone.addEventListener('dragleave', e => {
+        if (!zone.contains(e.relatedTarget)) zone.classList.remove('over');
+      });
+      zone.addEventListener('drop', e => {
+        e.preventDefault();
+        zone.classList.remove('over');
+        addFiles([...e.dataTransfer.files]);
+      });
+    }
+
+    /* ══════════════════════════════════════
+       FILE MANAGEMENT
+    ══════════════════════════════════════ */
+    const SUPPORTED_EXTS = new Set([
+      '.zip', '.pdf', '.docx', '.doc', '.jpg', '.jpeg', '.png', '.bmp', '.tiff',
+    ]);
+
+    function getExt(name) {
+      const i = name.lastIndexOf('.');
+      return i >= 0 ? name.slice(i).toLowerCase() : '';
+    }
+
+    function addFiles(incoming) {
+      let rejected = 0;
+      incoming.forEach(f => {
+        if (!SUPPORTED_EXTS.has(getExt(f.name))) { rejected++; return; }
+        const dup = state.files.some(x => x.name === f.name && x.size === f.size);
+        if (!dup) state.files.push(f);
+      });
+      if (rejected > 0) toast(`已过滤 ${rejected} 个不支持的文件格式`, 'e');
+      renderFileList();
+      syncBtn();
+    }
+
+    function removeFile(i) {
+      state.files.splice(i, 1);
+      renderFileList();
+      syncBtn();
+    }
+
+    // 根据扩展名返回图标颜色
+    function iconColor(name) {
+      const ext = getExt(name);
+      if (ext === '.zip')  return '#7c3aed';
+      if (ext === '.pdf')  return 'var(--red)';
+      if (ext === '.docx' || ext === '.doc') return 'var(--blue)';
+      return 'var(--green)'; // 图片
+    }
+
+    function renderFileList() {
+      const el = document.getElementById('file-list');
+      el.innerHTML = state.files.map((f, i) => `
+        <div class="file-item">
+          <div class="fi-icon">
+            <svg viewBox="0 0 20 20" fill="none" stroke="${iconColor(f.name)}" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+              <path d="M4 2h8l4 4v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/>
+              <polyline points="12 2 12 6 16 6"/>
+            </svg>
+          </div>
+          <div class="fi-info">
+            <div class="fi-name" title="${esc(f.name)}">${esc(f.name)}</div>
+            <div class="fi-size">${fmtBytes(f.size)}</div>
+          </div>
+          <div class="fi-rm" onclick="removeFile(${i})" title="移除">
+            <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" width="12" height="12">
+              <line x1="1" y1="1" x2="13" y2="13"/>
+              <line x1="13" y1="1" x2="1" y2="13"/>
+            </svg>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function syncBtn() {
+      const n = state.files.length;
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = n === 0;
+      document.getElementById('btn-text').textContent =
+        n > 0 ? `解析 ${n} 个文件` : '开始智能解析';
+    }
+
+    /* ══════════════════════════════════════
+       UPLOAD
+    ══════════════════════════════════════ */
+    async function handleUpload() {
+      if (!state.files.length) return;
+
+      const btn = document.getElementById('submit-btn');
+      const txt = document.getElementById('btn-text');
+      btn.disabled = true;
+      txt.textContent = '上传中…';
+
+      const fd = new FormData();
+      state.files.forEach(f => fd.append('files', f));
+
+      try {
+        const res = await fetch('/api/v1/upload', { method: 'POST', body: fd });
+        if (!res.ok) {
+          const json = await res.json().catch(() => ({}));
+          throw new Error(json.detail || `HTTP ${res.status}`);
+        }
+        const data = await res.json();
+
+        const task = {
+          id:     data.task_id,
+          names:  data.filenames,
+          status: 'pending',
+          at:     new Date().toISOString(),
+          err:    null,
+        };
+        state.tasks.unshift(task);
+        saveToStorage();
+        renderTasks();
+        startPolling(task.id);
+        toast('任务已创建，正在后台处理…');
+
+        state.files = [];
+        renderFileList();
+      } catch (err) {
+        toast(`上传失败：${err.message}`, 'e');
+      } finally {
+        syncBtn();
+      }
+    }
+
+    /* ══════════════════════════════════════
+       POLLING
+    ══════════════════════════════════════ */
+    function startPolling(id) {
+      if (state.timers.has(id)) return;
+      fetchStatus(id);
+      const tid = setInterval(() => fetchStatus(id), 2500);
+      state.timers.set(id, tid);
+    }
+
+    function stopPolling(id) {
+      clearInterval(state.timers.get(id));
+      state.timers.delete(id);
+    }
+
+    async function fetchStatus(id) {
+      try {
+        const res = await fetch(`/api/v1/tasks/${id}`);
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const task = state.tasks.find(t => t.id === id);
+        if (!task) { stopPolling(id); return; }
+
+        const prev  = task.status;
+        task.status = data.status;
+        task.err    = data.error;
+
+        saveToStorage();
+        patchCard(task);
+
+        if (data.status === 'done' || data.status === 'error') {
+          stopPolling(id);
+          if (data.status === 'done'  && prev !== 'done')  toast('解析完成！可下载 Excel 报告', 's');
+          if (data.status === 'error' && prev !== 'error') toast('任务处理失败，请查看详情', 'e');
+        }
+      } catch (_) { /* retry on next tick */ }
+    }
+
+    /* ══════════════════════════════════════
+       RENDER
+    ══════════════════════════════════════ */
+    function renderTasks() {
+      const list = document.getElementById('task-list');
+      document.getElementById('tasks-count').textContent = `共 ${state.tasks.length} 条记录`;
+
+      if (!state.tasks.length) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.4"
+                   stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
+                <rect x="3" y="3" width="18" height="18" rx="1"/>
+                <path d="M9 9h6M9 12h6M9 15h4"/>
+              </svg>
+            </div>
+            <p class="empty-primary">暂无处理记录</p>
+            <p class="empty-secondary">上传文件后，任务进度将在此实时显示</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = '';
+      state.tasks.forEach(t => list.appendChild(makeCard(t)));
+    }
+
+    function makeCard(t) {
+      const el = document.createElement('div');
+      el.className = 'task-card';
+      el.id = `tc-${t.id}`;
+      el.setAttribute('data-status', t.status);
+      el.innerHTML = cardHtml(t);
+      return el;
+    }
+
+    function patchCard(t) {
+      const el = document.getElementById(`tc-${t.id}`);
+      if (!el) return;
+      el.setAttribute('data-status', t.status);
+      el.innerHTML = cardHtml(t);
+      document.getElementById('tasks-count').textContent = `共 ${state.tasks.length} 条记录`;
+    }
+
+    function cardHtml(t) {
+      const tags = t.names
+        .map(n => `<span class="tc-tag" title="${esc(n)}">${esc(n)}</span>`)
+        .join('');
+
+      const progress = (t.status === 'pending' || t.status === 'processing')
+        ? `<div class="progress-bar"><div class="progress-fill"></div></div>` : '';
+
+      const errBlock = t.err
+        ? `<div class="tc-error">⚠&nbsp;${esc(t.err)}</div>` : '';
+
+      const dlBtn = t.status === 'done'
+        ? `<a class="dl-btn" href="/api/v1/tasks/${t.id}/download" download>
+             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+               <path d="M8 1v9"/><path d="m4 7 4 4 4-4"/>
+               <path d="M2 13h12"/>
+             </svg>
+             下载 Excel
+           </a>` : '';
+
+      return `
+        <div class="tc-head">
+          <div>
+            <div class="tc-id-label">任务编号</div>
+            <div class="tc-id-value" title="${esc(t.id)}">${t.id.slice(0, 8)}&hellip;</div>
+          </div>
+          <span class="status-badge ${t.status}">
+            <span class="sb-dot"></span>${STATUS_LABEL[t.status] || t.status}
+          </span>
+        </div>
+        <div class="tc-files">
+          <div class="tc-files-label">文档包</div>
+          <div class="tc-tags">${tags}</div>
+        </div>
+        ${progress}
+        ${errBlock}
+        <div class="tc-foot">
+          <span class="tc-time">${fmtTime(t.at)}</span>
+          ${dlBtn}
+        </div>
+      `;
+    }
+
+    function clearTasks() {
+      if (!confirm('确认清空所有历史记录？此操作不可撤销。')) return;
+      state.tasks.forEach(t => stopPolling(t.id));
+      state.tasks = [];
+      saveToStorage();
+      renderTasks();
+    }
+
+    /* ══════════════════════════════════════
+       STORAGE
+    ══════════════════════════════════════ */
+    function saveToStorage() {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(state.tasks)); } catch (_) {}
+    }
+    function loadFromStorage() {
+      try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch (_) { return []; }
+    }
+
+    /* ══════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════ */
+    function toast(msg, type = '') {
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      document.getElementById('toasts').appendChild(el);
+      setTimeout(() => {
+        el.style.animation = 'toastOut .3s ease forwards';
+        setTimeout(() => el.remove(), 320);
+      }, 4200);
+    }
+
+    /* ══════════════════════════════════════
+       UTILITIES
+    ══════════════════════════════════════ */
+    function esc(s) {
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function fmtBytes(b) {
+      if (b < 1024) return `${b} B`;
+      if (b < 1048576) return `${(b/1024).toFixed(1)} KB`;
+      return `${(b/1048576).toFixed(1)} MB`;
+    }
+
+    function fmtTime(iso) {
+      if (!iso) return '';
+      return new Date(iso).toLocaleString('zh-CN', {
+        month: '2-digit', day: '2-digit',
+        hour:  '2-digit', minute: '2-digit',
+      });
+    }
+
+    /* ══════════════════════════════════════
+       START
+    ══════════════════════════════════════ */
+    init();
+  </script>
+</body>
+</html>
