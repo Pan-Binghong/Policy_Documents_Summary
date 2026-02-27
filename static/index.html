@@ -501,7 +501,7 @@
               </div>
               <p class="dz-primary">拖拽文件至此处，或点击选择</p>
               <p class="dz-secondary">支持 ZIP / PDF / Word / 图片 &middot; 可混合批量上传</p>
-              <input type="file" id="file-input" accept=".zip,.pdf,.docx,.doc,.jpg,.jpeg,.png,.bmp,.tiff" multiple style="display:none" />
+              <input type="file" id="file-input" accept=".zip,.pdf,.docx,.doc,.wps,.jpg,.jpeg,.png,.bmp,.tiff" multiple style="display:none" />
             </div>
 
             <!-- Supported file types -->
@@ -621,7 +621,7 @@
        FILE MANAGEMENT
     ══════════════════════════════════════ */
     const SUPPORTED_EXTS = new Set([
-      '.zip', '.pdf', '.docx', '.doc', '.jpg', '.jpeg', '.png', '.bmp', '.tiff',
+      '.zip', '.pdf', '.docx', '.doc', '.wps', '.jpg', '.jpeg', '.png', '.bmp', '.tiff',
     ]);
 
     function getExt(name) {
@@ -652,7 +652,7 @@
       const ext = getExt(name);
       if (ext === '.zip')  return '#7c3aed';
       if (ext === '.pdf')  return 'var(--red)';
-      if (ext === '.docx' || ext === '.doc') return 'var(--blue)';
+      if (ext === '.docx' || ext === '.doc' || ext === '.wps') return 'var(--blue)';
       return 'var(--green)'; // 图片
     }
 

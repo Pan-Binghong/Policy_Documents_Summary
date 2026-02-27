@@ -2,7 +2,7 @@ import zipfile
 from pathlib import Path
 
 
-SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
+SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".doc", ".wps", ".txt", ".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
 
 
 def _decode_zip_filename(member: zipfile.ZipInfo) -> str:

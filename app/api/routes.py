@@ -19,7 +19,7 @@ UPLOAD_DIR = Path("uploads")
 OUTPUT_DIR = Path("outputs")
 
 # 支持直接上传的单文件格式（不含 zip，zip 单独处理）
-SINGLE_FILE_EXTENSIONS = {".pdf", ".docx", ".doc", ".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
+SINGLE_FILE_EXTENSIONS = {".pdf", ".docx", ".doc", ".wps", ".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
 
 
 @router.post("/upload", summary="批量上传文件（.zip / .pdf / .docx / 图片），所有文件合并为一个任务，导出一份 Excel")
