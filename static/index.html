@@ -40,12 +40,15 @@
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html, body { height: 100%; }
+
     body {
       font-family: var(--f-sans);
       font-size: 14px;
       line-height: 1.65;
       background: var(--bg);
       color: var(--text);
+      overflow: hidden;
     }
 
     /* ── SITE HEADER ── */
@@ -107,14 +110,18 @@
 
     /* ── MAIN CONTENT AREA ── */
     .site-main {
-      min-height: calc(100vh - 71px);
+      height: calc(100vh - 71px);
+      overflow: hidden;
       background: var(--bg);
       background-image: radial-gradient(circle, rgba(13,31,66,0.055) 1px, transparent 1px);
       background-size: 24px 24px;
     }
 
     .main-inner {
-      max-width: 1360px; margin: 0 auto; padding: 32px 28px 64px;
+      max-width: 1360px; margin: 0 auto; padding: 24px 28px;
+      height: 100%;
+      display: flex; flex-direction: column;
+      overflow: hidden;
     }
 
     /* ── SECTION HEADING ── */
@@ -137,8 +144,27 @@
     .main-grid {
       display: grid;
       grid-template-columns: 390px 1fr;
+      grid-template-rows: 1fr;
       gap: 28px;
-      align-items: start;
+      align-items: stretch;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* 两列 section：统一 flex 列布局，卡片撑满剩余高度 */
+    .main-grid > section {
+      min-height: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* 左列上传卡片：flex 列，file-list 弹性滚动 */
+    .main-grid > section:first-child > .card {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
     }
 
     /* ── CARD SHELL ── */
@@ -151,6 +177,7 @@
 
     /* ── DROP ZONE ── */
     .drop-zone {
+      flex-shrink: 0;
       border: 2px dashed var(--blue-border);
       background: var(--blue-light);
       padding: 42px 20px;
@@ -194,7 +221,7 @@
     .dz-secondary { font-size: 12px; color: var(--text2); }
 
     /* ── DOC TYPE BADGES ── */
-    .doc-types { display: flex; gap: 8px; margin-bottom: 16px; }
+    .doc-types { display: flex; gap: 8px; margin-bottom: 16px; flex-shrink: 0; }
     .dt-item {
       flex: 1; padding: 9px 6px; border: 1px solid var(--border);
       background: var(--surface2); text-align: center;
@@ -214,7 +241,10 @@
     .dt-label { font-size: 11px; color: var(--text2); }
 
     /* ── FILE LIST ── */
-    .file-list { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+    .file-list {
+      display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px;
+      flex: 1; min-height: 0; overflow-y: auto;
+    }
 
     .file-item {
       display: flex; align-items: center; gap: 12px;
@@ -248,7 +278,7 @@
 
     /* ── SUBMIT BUTTON ── */
     .submit-btn {
-      width: 100%;
+      width: 100%; flex-shrink: 0;
       display: flex; align-items: center; justify-content: center; gap: 10px;
       padding: 13px 20px;
       background: var(--navy); border: 2px solid var(--navy);
@@ -266,11 +296,20 @@
     .submit-btn:disabled { opacity: 0.32; cursor: not-allowed; }
 
     /* ── TASKS PANEL ── */
-    .tasks-panel { display: flex; flex-direction: column; }
+    .tasks-card {
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      flex: 1;
+    }
 
     .tasks-meta {
       display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 12px;
+      padding: 14px 22px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
     }
     .tasks-count {
       font-family: var(--f-mono); font-size: 11px; color: var(--text3);
@@ -281,14 +320,14 @@
     }
     .clear-btn:hover { color: var(--red); }
 
-    .task-list { display: flex; flex-direction: column; gap: 10px; }
+    .task-list {
+      display: flex; flex-direction: column; gap: 10px; padding: 16px 22px;
+      flex: 1; min-height: 0; overflow-y: auto;
+    }
 
     /* ── EMPTY STATE ── */
     .empty-state {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      padding: 72px 24px; text-align: center;
-      box-shadow: var(--shadow-sm);
+      padding: 56px 24px; text-align: center;
     }
     .empty-icon {
       width: 56px; height: 56px; margin: 0 auto 18px;
@@ -443,9 +482,16 @@
 
     /* ── RESPONSIVE ── */
     @media (max-width: 860px) {
-      .main-grid { grid-template-columns: 1fr; }
+      html, body { height: auto; overflow: auto; }
+      .site-main { height: auto; overflow: visible; }
+      .main-inner { height: auto; padding: 20px 16px 48px; }
+      .main-grid { grid-template-columns: 1fr; grid-template-rows: none; flex: none; }
+      .main-grid > section { display: block; min-height: auto; overflow: visible; }
+      .main-grid > section:first-child > .card { flex: none; display: block; }
+      .file-list { flex: none; max-height: 40vh; }
+      .tasks-card { min-height: auto; }
+      .task-list { flex: none; max-height: 70vh; }
       .hdr-inner { padding: 0 16px; }
-      .main-inner { padding: 20px 16px 48px; }
     }
   </style>
 </head>
@@ -539,19 +585,20 @@
         </section>
 
         <!-- ─── RIGHT: TASK QUEUE ─── -->
-        <section class="tasks-panel">
+        <section>
           <div class="sec-hdr">
             <span class="sec-num">02</span>
             <span class="sec-label">任务队列</span>
             <span class="sec-rule"></span>
           </div>
 
-          <div class="tasks-meta">
-            <span class="tasks-count" id="tasks-count">共 0 条记录</span>
-            <button class="clear-btn" onclick="clearTasks()">清空历史</button>
+          <div class="card tasks-card">
+            <div class="tasks-meta">
+              <span class="tasks-count" id="tasks-count">共 0 条记录</span>
+              <button class="clear-btn" onclick="clearTasks()">清空历史</button>
+            </div>
+            <div class="task-list" id="task-list"></div>
           </div>
-
-          <div class="task-list" id="task-list"></div>
         </section>
 
       </div>
