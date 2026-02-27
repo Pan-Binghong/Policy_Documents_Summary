@@ -115,10 +115,11 @@ def _parse_doc_legacy(path: Path) -> str:
 def _parse_wps(path: Path) -> str:
     """
     解析 WPS Writer .wps 文件。
-    依次尝试：LibreOffice headless 转换 → WPS Office COM → Word COM。
+    依次尝试：LibreOffice headless 转换 → COM 自动化（WPS.Application /
+    KWPS.Application / Word.Application，覆盖不同版本 WPS 的注册名）。
     均不可用时返回占位提示，避免任务整体失败。
     """
-    # 1. LibreOffice headless 转换（支持 .wps 格式，推荐）
+    # 1. LibreOffice headless 转换（跨平台，优先）
     soffice = shutil.which("soffice") or shutil.which("libreoffice")
     if soffice:
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -136,45 +137,35 @@ def _parse_wps(path: Path) -> str:
             except Exception as e:
                 logger.warning("LibreOffice 转换 .wps 失败 (%s): %s", path.name, e)
 
-    # 2. WPS Office COM 自动化（Windows + 已安装 WPS Office）
+    # 2. COM 自动化（Windows，需安装 pywin32）
+    #    依次尝试多个 ProgID，覆盖不同版本 WPS Office 及 Microsoft Word 的注册名。
+    _COM_PROGIDS = ("WPS.Application", "KWPS.Application", "Word.Application")
     try:
-        import win32com.client  # type: ignore[import]
+        import win32com.client  # type: ignore[import]  # noqa: PLC0415
 
-        wps = win32com.client.Dispatch("WPS.Application")
-        wps.Visible = False
-        try:
-            doc = wps.Documents.Open(str(path.absolute()))
-            text = doc.Content.Text
-            doc.Close(False)
-        finally:
-            wps.Quit()
-        return text.strip()
+        for progid in _COM_PROGIDS:
+            app = None
+            try:
+                app = win32com.client.Dispatch(progid)
+                app.Visible = False
+                doc = app.Documents.Open(str(path.absolute()))
+                text = doc.Content.Text
+                doc.Close(False)
+                return text.strip()
+            except Exception as e:
+                logger.debug("COM [%s] 解析 .wps 失败，尝试下一个 (%s): %s", progid, path.name, e)
+            finally:
+                if app is not None:
+                    try:
+                        app.Quit()
+                    except Exception:
+                        pass
     except ImportError:
-        pass
-    except Exception as e:
-        logger.warning("WPS Office COM 解析 .wps 失败 (%s): %s", path.name, e)
+        logger.debug("pywin32 未安装，跳过 COM 自动化")
 
-    # 3. Word COM 自动化（部分 WPS 安装会注册 Word.Application 兼容接口）
-    try:
-        import win32com.client  # type: ignore[import]
-
-        word = win32com.client.Dispatch("Word.Application")
-        word.Visible = False
-        try:
-            doc = word.Documents.Open(str(path.absolute()))
-            text = doc.Content.Text
-            doc.Close(False)
-        finally:
-            word.Quit()
-        return text.strip()
-    except ImportError:
-        pass
-    except Exception as e:
-        logger.warning("Word COM 解析 .wps 失败 (%s): %s", path.name, e)
-
-    # 4. 降级：返回占位文本，任务继续运行
-    logger.warning("无法解析 .wps 文件 %s（未找到 LibreOffice 或 WPS/Word COM），已跳过", path.name)
-    return f"[无法解析 .wps 文件: {path.name}，请安装 LibreOffice 或确认 WPS Office 已正确安装]"
+    # 3. 降级：返回占位文本，任务继续运行
+    logger.warning("无法解析 .wps 文件 %s（未找到 LibreOffice 或可用的 COM 应用），已跳过", path.name)
+    return f"[无法解析 .wps 文件: {path.name}，请确认已安装 LibreOffice 或 WPS Office]"
 
 
 def _parse_image_ocr(path: Path, ocr_api_url: str, ocr_api_key: str) -> str:

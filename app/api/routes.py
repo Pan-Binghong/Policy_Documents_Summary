@@ -54,7 +54,7 @@ async def upload_files(background_tasks: BackgroundTasks, files: List[UploadFile
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"不支持的文件格式：'{file.filename}'。支持 .zip / .pdf / .docx / .doc / .jpg / .jpeg / .png / .bmp / .tiff",
+                detail=f"不支持的文件格式：'{file.filename}'。支持 .zip / .pdf / .docx / .doc / .wps / .jpg / .jpeg / .png / .bmp / .tiff",
             )
 
     if not zip_paths and not single_paths:
