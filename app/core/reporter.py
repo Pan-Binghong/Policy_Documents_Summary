@@ -1,9 +1,18 @@
+import re
 from pathlib import Path
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
 from app.models.db import PolicyRecord
+
+
+def _format_numbered_lines(text: str) -> str:
+    """在序号（1. 2、1） 等）前插入换行，改善 Excel 单元格可读性。"""
+    if not text or text == "/":
+        return text
+    # 匹配：前一字符不是换行 + 序号前空白 + 序号（数字+点/顿号，点后非数字避免处理小数）
+    return re.sub(r'(?<=[^\n])[ \t]*(\d+[.．、](?!\d))', r'\n\1', text).strip()
 
 # 列顺序与列宽（字符数）集中管理，调整字段顺序只改这里
 COLUMNS: list[tuple[str, int]] = [
@@ -57,7 +66,7 @@ def export_to_excel(task_id: str, records: list[PolicyRecord], output_dir: Path)
     for row_idx, record in enumerate(records, start=2):
         for col_idx, (col_name, _) in enumerate(COLUMNS, start=1):
             value = getattr(record, col_name, "/") or "/"
-            ws.cell(row=row_idx, column=col_idx, value=value).alignment = _ALIGN_TOP
+            ws.cell(row=row_idx, column=col_idx, value=_format_numbered_lines(value)).alignment = _ALIGN_TOP
 
     # ── 合并单元格 ──
     if len(records) >= 2:

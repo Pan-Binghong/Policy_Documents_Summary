@@ -1,0 +1,8 @@
+.venv/
+.env
+outputs/
+tests/
+docker/
+__pycache__/
+*.pyc
+.git/
