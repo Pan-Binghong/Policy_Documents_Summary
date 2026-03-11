@@ -98,6 +98,36 @@ def download_result(task_id: str):
     )
 
 
+def _extract_source_url_from_files(files: list[Path]) -> str | None:
+    """从解压后的文件列表中提取来源 URL。
+
+    按文件名排序，只处理 .docx 文件，读取每个文件的第一个非空段落，
+    用正则匹配 URL，返回找到的第一个 URL；找不到则返回 None。
+    """
+    import re
+    import docx
+
+    sorted_files = sorted(files, key=lambda p: p.name)
+    for file_path in sorted_files:
+        if file_path.suffix.lower() != ".docx":
+            continue
+        if file_path.name.startswith("~$"):
+            continue
+        try:
+            doc = docx.Document(str(file_path))
+            for para in doc.paragraphs:
+                text = para.text.strip()
+                if not text:
+                    continue
+                match = re.search(r"https?://\S+", text)
+                if match:
+                    return match.group(0)
+                break  # 只检查第一个非空段落
+        except Exception:
+            continue
+    return None
+
+
 def _process_task(task_id: str, zip_paths: list[Path], single_paths: list[Path]) -> None:
     """后台任务：处理 ZIP 和单文件 → LLM 提取 → 写库 → 导出一份合并 Excel。
 
@@ -139,6 +169,13 @@ def _process_task(task_id: str, zip_paths: list[Path], single_paths: list[Path])
             logger.info("Task %s ZIP[%d] 开始 LLM 提取，合并文本 %d 字符", task_id, idx + 1, len(merged_text))
             rows = extractor.extract(merged_text)
             logger.info("Task %s ZIP[%d] LLM 提取完成，共 %d 行", task_id, idx + 1, len(rows))
+
+            source_url = _extract_source_url_from_files(files)
+            if source_url:
+                logger.info("Task %s ZIP[%d] 从文档首行提取到来源链接，强制覆盖网站链接: %s", task_id, idx + 1, source_url)
+                for row in rows:
+                    row.网站链接 = source_url
+
             all_rows.extend(rows)
 
         # ── 单文件：直接解析 → 独立一次 LLM 提取 ──
