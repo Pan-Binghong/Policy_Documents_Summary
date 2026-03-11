@@ -256,6 +256,13 @@ def _process_task(task_id: str, zip_paths: list[Path], single_paths: list[Path])
             logger.info("Task %s 单文件[%d] 开始 LLM 提取", task_id, idx + 1)
             rows = extractor.extract(text)
             logger.info("Task %s 单文件[%d] LLM 提取完成，共 %d 行", task_id, idx + 1, len(rows))
+
+            source_url = _extract_source_url_from_files([file_path])
+            if source_url:
+                logger.info("Task %s 单文件[%d] 从文档首行提取到来源链接，强制覆盖网站链接: %s", task_id, idx + 1, source_url)
+                for row in rows:
+                    row.网站链接 = source_url
+
             all_rows.extend(rows)
 
         # ── 写入 MySQL ──
