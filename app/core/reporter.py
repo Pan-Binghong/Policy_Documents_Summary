@@ -43,6 +43,9 @@ _HEADER_FONT = Font(bold=True, color="FFFFFF")
 
 _ALIGN_CENTER = Alignment(wrap_text=True, vertical="center", horizontal="left")
 _ALIGN_TOP    = Alignment(wrap_text=True, vertical="top")
+_LINK_FONT    = Font(color="0563C1", underline="single")  # Excel 超链接默认样式
+
+_LINK_COL_NAME = "网站链接"
 
 
 def export_to_excel(task_id: str, records: list[PolicyRecord], output_dir: Path) -> Path:
@@ -66,7 +69,16 @@ def export_to_excel(task_id: str, records: list[PolicyRecord], output_dir: Path)
     for row_idx, record in enumerate(records, start=2):
         for col_idx, (col_name, _) in enumerate(COLUMNS, start=1):
             value = getattr(record, col_name, "/") or "/"
-            ws.cell(row=row_idx, column=col_idx, value=_format_numbered_lines(value)).alignment = _ALIGN_TOP
+            cell = ws.cell(row=row_idx, column=col_idx)
+            if col_name == _LINK_COL_NAME and value != "/":
+                # 写入超链接，让 Excel 可直接点击跳转
+                cell.value = value
+                cell.hyperlink = value
+                cell.font = _LINK_FONT
+                cell.alignment = _ALIGN_TOP
+            else:
+                cell.value = _format_numbered_lines(value)
+                cell.alignment = _ALIGN_TOP
 
     # ── 合并单元格 ──
     if len(records) >= 2:
