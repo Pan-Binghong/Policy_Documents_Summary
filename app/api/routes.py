@@ -101,30 +101,96 @@ def download_result(task_id: str):
 def _extract_source_url_from_files(files: list[Path]) -> str | None:
     """从解压后的文件列表中提取来源 URL。
 
-    按文件名排序，只处理 .docx 文件，读取每个文件的第一个非空段落，
-    用正则匹配 URL，返回找到的第一个 URL；找不到则返回 None。
+    按文件名排序，依次处理 .docx/.doc/.wps/.pdf 文件（图片跳过），
+    读取每个文件的第一个非空段落/行，用正则匹配 URL，
+    返回找到的第一个 URL；找不到则返回 None。
     """
     import re
-    import docx
+
+    _IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
 
     sorted_files = sorted(files, key=lambda p: p.name)
     for file_path in sorted_files:
-        if file_path.suffix.lower() != ".docx":
-            continue
         if file_path.name.startswith("~$"):
             continue
+        suffix = file_path.suffix.lower()
+        if suffix in _IMAGE_EXTS:
+            continue
+
         try:
-            doc = docx.Document(str(file_path))
-            for para in doc.paragraphs:
-                text = para.text.strip()
-                if not text:
-                    continue
-                match = re.search(r"https?://\S+", text)
+            first_line: str | None = None
+
+            if suffix == ".docx":
+                import docx as _docx
+                doc = _docx.Document(str(file_path))
+                for para in doc.paragraphs:
+                    t = para.text.strip()
+                    if t:
+                        first_line = t
+                        break
+
+            elif suffix in (".doc", ".wps"):
+                # 先尝试 python-docx（部分 .doc/.wps 实际是 OOXML）
+                try:
+                    import docx as _docx
+                    doc = _docx.Document(str(file_path))
+                    for para in doc.paragraphs:
+                        t = para.text.strip()
+                        if t:
+                            first_line = t
+                            break
+                except Exception:
+                    # 降级到 win32com COM 自动化
+                    try:
+                        import win32com.client  # type: ignore[import]
+                        _progids = (
+                            ("WPS.Application", "KWPS.Application", "Word.Application")
+                            if suffix == ".wps"
+                            else ("Word.Application",)
+                        )
+                        for progid in _progids:
+                            app = None
+                            try:
+                                app = win32com.client.Dispatch(progid)
+                                app.Visible = False
+                                doc_obj = app.Documents.Open(str(file_path.absolute()))
+                                all_text = doc_obj.Content.Text
+                                doc_obj.Close(False)
+                                for line in all_text.splitlines():
+                                    t = line.strip()
+                                    if t:
+                                        first_line = t
+                                        break
+                            except Exception:
+                                pass
+                            finally:
+                                if app is not None:
+                                    try:
+                                        app.Quit()
+                                    except Exception:
+                                        pass
+                            if first_line:
+                                break
+                    except ImportError:
+                        pass
+
+            elif suffix == ".pdf":
+                import fitz  # PyMuPDF
+                doc = fitz.open(str(file_path))
+                if doc.page_count > 0:
+                    page_text = doc[0].get_text()
+                    lines = [ln.strip() for ln in page_text.splitlines() if ln.strip()]
+                    first_line = "\n".join(lines[:10]) if lines else None
+                doc.close()
+
+            if first_line:
+                match = re.search(r"https?://\S+", first_line)
                 if match:
                     return match.group(0)
-                break  # 只检查第一个非空段落
+
         except Exception:
             continue
+
     return None
 
 
