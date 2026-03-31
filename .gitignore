@@ -36,6 +36,7 @@ outputs/
 
 # Docker
 docker/*.tar
+*.tar
 
 # Test artifacts
 .pytest_cache/
