@@ -2,14 +2,14 @@
 cd /d %~dp0\..
 
 echo [1/2] Building Docker image...
-docker build -t policy-summary:20260331 .
+docker build -t policy-summary:20260401 .
 if %errorlevel% neq 0 (
     echo Build failed
     exit /b 1
 )
 
 echo [2/2] Exporting to tar...
-docker save policy-summary:20260331 -o docker\policy-summary.tar
+docker save policy-summary:20260401 -o docker\policy-summary.tar
 if %errorlevel% neq 0 (
     echo Export failed
     exit /b 1
