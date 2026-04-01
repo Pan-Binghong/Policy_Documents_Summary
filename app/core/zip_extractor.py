@@ -30,6 +30,12 @@ def safe_extract(zip_path: Path, dest_dir: Path) -> list[Path]:
     防止 zip-slip 攻击。
     兼容国内 Windows 打包的 GBK 文件名 zip。
     """
+    if not zipfile.is_zipfile(zip_path):
+        raise ValueError(
+            f"文件 '{zip_path.name}' 不是有效的 ZIP 文件。"
+            "请确认文件未损坏，且扩展名与实际格式一致（不支持 .rar/.7z 等格式）。"
+        )
+
     dest_dir.mkdir(parents=True, exist_ok=True)
     extracted: list[Path] = []
 

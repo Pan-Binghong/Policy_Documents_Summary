@@ -52,16 +52,17 @@ def parse_document(file_path: Path, ocr_api_url: str, ocr_api_key: str = "") -> 
 def _parse_pdf(path: Path) -> str:
     import fitz  # PyMuPDF
 
-    doc = fitz.open(str(path))
+    doc = fitz.open(stream=path.read_bytes(), filetype="pdf")
     text = "\n".join(page.get_text() for page in doc)
     doc.close()
     return text.strip()
 
 
 def _parse_docx(path: Path) -> str:
+    import io
     from docx import Document
 
-    doc = Document(str(path))
+    doc = Document(io.BytesIO(path.read_bytes()))
     return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
 
 

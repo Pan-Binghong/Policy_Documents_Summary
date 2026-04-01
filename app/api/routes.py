@@ -121,8 +121,9 @@ def _extract_source_url_from_files(files: list[Path]) -> str | None:
             first_line: str | None = None
 
             if suffix == ".docx":
+                import io
                 import docx as _docx
-                doc = _docx.Document(str(file_path))
+                doc = _docx.Document(io.BytesIO(file_path.read_bytes()))
                 for para in doc.paragraphs:
                     t = para.text.strip()
                     if t:
@@ -132,8 +133,9 @@ def _extract_source_url_from_files(files: list[Path]) -> str | None:
             elif suffix in (".doc", ".wps"):
                 # 先尝试 python-docx（部分 .doc/.wps 实际是 OOXML）
                 try:
+                    import io
                     import docx as _docx
-                    doc = _docx.Document(str(file_path))
+                    doc = _docx.Document(io.BytesIO(file_path.read_bytes()))
                     for para in doc.paragraphs:
                         t = para.text.strip()
                         if t:
@@ -175,8 +177,9 @@ def _extract_source_url_from_files(files: list[Path]) -> str | None:
                         pass
 
             elif suffix == ".pdf":
+                import io
                 import fitz  # PyMuPDF
-                doc = fitz.open(str(file_path))
+                doc = fitz.open(stream=file_path.read_bytes(), filetype="pdf")
                 if doc.page_count > 0:
                     page_text = doc[0].get_text()
                     lines = [ln.strip() for ln in page_text.splitlines() if ln.strip()]

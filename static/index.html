@@ -510,7 +510,7 @@
         </div>
       </div>
       <div class="hdr-right">
-        <span class="version">v0.1.0</span>
+        <span class="version">v0.1.2</span>
         <div class="sys-status">
           <div class="sys-dot"></div>
           <span class="sys-label">系统运行中</span>
@@ -677,13 +677,15 @@
     }
 
     function addFiles(incoming) {
-      let rejected = 0;
+      const rejectedNames = [];
       incoming.forEach(f => {
-        if (!SUPPORTED_EXTS.has(getExt(f.name))) { rejected++; return; }
+        if (!SUPPORTED_EXTS.has(getExt(f.name))) { rejectedNames.push(f.name); return; }
         const dup = state.files.some(x => x.name === f.name && x.size === f.size);
         if (!dup) state.files.push(f);
       });
-      if (rejected > 0) toast(`已过滤 ${rejected} 个不支持的文件格式`, 'e');
+      if (rejectedNames.length > 0) {
+        toast(`不支持的格式，已拒绝：${rejectedNames.join('、')}`, 'e');
+      }
       renderFileList();
       syncBtn();
     }
