@@ -13,6 +13,6 @@ docker run -d \
   -v /home/erpuser/policy-summary/outputs:/app/outputs \
   -v /home/erpuser/policy-summary/uploads:/app/uploads \
   -v "$(pwd)/.env:/app/.env:ro" \
-  policy-summary:20260311
+  policy-summary:20260331
 
 echo "服务已启动：http://localhost:9012"
